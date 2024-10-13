@@ -1,6 +1,6 @@
 import scrapy
 from bookscraper.items import BookItem
-
+#import random
 
 class BookspiderSpider(scrapy.Spider):
     name = "bookspider"
@@ -13,6 +13,14 @@ class BookspiderSpider(scrapy.Spider):
         }
     }
 
+    # user_agent_list = [
+    #     'Mozilla/5.0 (Linux x86_64) Gecko/20100101 Firefox/50.4',
+    #     'Mozilla/5.0 (U; Linux x86_64; en-US) AppleWebKit/535.14 (KHTML, like Gecko) Chrome/48.0.2228.310 Safari/600',
+    #     'Mozilla/5.0 (Windows; Windows NT 6.3; Win64; x64) AppleWebKit/600.46 (KHTML, like Gecko) Chrome/52.0.3512.380 Safari/601',
+    #     'Mozilla/5.0 (Android; Android 4.3.1; HUAWEI G6-L10 Build/HuaweiG6-L11) AppleWebKit/600.21 (KHTML, like Gecko)  Chrome/50.0.3862.278 Mobile Safari/536.2',
+    #     'Mozilla/5.0 (iPhone; CPU iPhone OS 7_0_3; like Mac OS X) AppleWebKit/603.4 (KHTML, like Gecko)  Chrome/51.0.3158.350 Mobile Safari/603.5'
+    # ]
+
     def parse(self, response):
         books = response.css('article.product_pod')
 
@@ -24,7 +32,11 @@ class BookspiderSpider(scrapy.Spider):
                     book_page_url = 'https://books.toscrape.com/' + book_page
                 else:
                     book_page_url = 'https://books.toscrape.com/catalogue/' + book_page
-                yield response.follow(book_page_url, callback=self.parse_book_page)
+                yield response.follow(
+                    book_page_url, 
+                    callback=self.parse_book_page, 
+                    #headers={'User-Agent': random.randint(0, len(self.user_agent_list) - 1)}
+                )
 
             # yield {
             #     'name': book.css('h3 a::attr(title)').get(),
@@ -39,7 +51,11 @@ class BookspiderSpider(scrapy.Spider):
                 next_page_url = 'https://books.toscrape.com/' + next_page
             else:
                 next_page_url = 'https://books.toscrape.com/catalogue/' + next_page
-            yield response.follow(next_page_url, callback=self.parse)
+            yield response.follow(
+                next_page_url, 
+                callback=self.parse,
+                #headers={'User-Agent': random.randint(0, len(self.user_agent_list) - 1)}
+            )
 
     def parse_book_page(self, response):
         table_rows = response.css('table tr')
