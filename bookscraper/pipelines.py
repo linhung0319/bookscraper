@@ -72,3 +72,91 @@ class BookItemPipeline:
             adapter['stars'] = -1
 
         return item
+
+
+import os
+import mysql.connector
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class SaveToMySQLPipeline:
+    def __init__(self):
+        ## Connect to MySQL
+        self.conn = mysql.connector.connect(
+            host = os.getenv('DB_HOST'),
+            user = os.getenv('DB_USER'),
+            password = os.getenv('DB_PASSWORD'),
+            database = os.getenv('DB_DATABASE')
+        )
+
+        ## Create cursor, used to execute commands
+        self.cur = self.conn.cursor()
+        self.cur.execute("""
+            CREATE TABLE IF NOT EXISTS books(
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                url VARCHAR(255),
+                title text,
+                upc VARCHAR(255),
+                product_type VARCHAR(255),
+                price_excl_tax DECIMAL,
+                price_incl_tax DECIMAL,
+                tax DECIMAL,
+                price DECIMAL,
+                availability INTEGER,
+                num_reviews INTEGER,
+                stars INTEGER,
+                category VARCHAR(255),
+                description text
+            )
+        """)
+
+    def process_item(self, item, spider):
+        ## Only for BookItem
+        if isinstance(item, BookItem):
+            self.save_book_item(item)
+        
+        return item
+        
+    def save_book_item(self, item):
+        ## Insert item into MySQL
+        self.cur.execute("""
+            INSERT INTO books (
+                url,
+                title,
+                upc,
+                product_type,
+                price_excl_tax,
+                price_incl_tax,
+                tax,
+                price,
+                availability,
+                num_reviews,
+                stars,
+                category,
+                description
+            ) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            item['url'],
+            item['title'],
+            item['upc'],
+            item['product_type'],
+            item['price_excl_tax'],
+            item['price_incl_tax'],
+            item['tax'],
+            item['price'],
+            item['availability'],
+            item['num_reviews'],
+            item['stars'],
+            item['category'],
+            item['description']
+        ))
+
+        # Execute inser of data into database
+        self.conn.commit()
+        return item
+    
+    def close_spider(self, spider):
+        # Close cursor and connection to database
+        self.cur.close()
+        self.conn.close()
